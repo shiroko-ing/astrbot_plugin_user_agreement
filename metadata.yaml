@@ -1,0 +1,7 @@
+name: astrbot_plugin_user_agreement
+display_name: 用户协议与隐私政策
+author: shiroko
+version: 1.0.0
+desc: 要求用户同意用户协议及隐私政策后方可使用机器人，支持管理员一键撤销所有同意。
+short_desc: 用户协议与隐私政策同意管理插件
+repo: https://github.com/shiroko/astrbot_plugin_user_agreement
