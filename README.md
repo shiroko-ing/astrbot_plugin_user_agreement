@@ -1,4 +1,4 @@
-# ⚖️ astrbot_plugin_user_agreement
+# ⚖️astrbot_plugin_user_agreement
 
 AstrBot 用户协议与隐私政策同意管理插件。
 
