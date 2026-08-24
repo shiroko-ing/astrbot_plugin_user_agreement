@@ -1,74 +1,124 @@
-{
-  "user_agreement_title": {
-    "description": "用户协议标题",
-    "type": "string",
-    "default": "用户协议"
-  },
-  "user_agreement": {
-    "description": "用户协议内容",
-    "type": "text",
-    "hint": "用户协议全文，可在 WebUI 中修改。用户需发送 /同意 或配置中设置的同意指令以表示同意。",
-    "default": "
-  },
-  "privacy_policy_title": {
-    "description": "隐私政策标题",
-    "type": "string",
-    "default": "隐私政策"
-  },
-  "privacy_policy": {
-    "description": "隐私政策内容",
-    "type": "text",
-    "hint": "隐私政策全文，可在 WebUI 中修改。",
-    "default": ""
-  },
-  "reminder_text": {
-    "description": "提醒文本",
-    "type": "text",
-    "hint": "当用户未同意时，此文本将出现在主消息中，下方接合并转发的协议全文。",
-    "default": "⚠️ 您还未同意用户协议及隐私政策，请查看下方内容后发送 /同意 表示同意。\n\n已了解以上内容并同意？请发送: /同意"
-  },
-  "agree_command": {
-    "description": "同意指令（不含 /）",
-    "type": "string",
-    "hint": "用户发送此指令即表示同意。",
-    "default": "同意"
-  },
-  "agree_success_text": {
-    "description": "同意成功提示",
-    "type": "string",
-    "default": "✅ 您已同意用户协议与隐私政策，现在可以正常使用机器人了！"
-  },
-  "already_agreed_text": {
-    "description": "已同意提示",
-    "type": "string",
-    "default": "您已同意过用户协议与隐私政策，无需重复操作。"
-  },
-  "repeat_reminder_text": {
-    "description": "重复提醒文本",
-    "type": "string",
-    "hint": "已被提醒但未同意的用户再次发消息时只显示此简短提示，不发完整协议。",
-    "default": "⚠️ 您尚未同意用户协议与隐私政策，请发送 /同意 以继续使用。"
-  },
-  "revoke_command": {
-    "description": "撤销同意指令（不含 /）",
-    "type": "string",
-    "hint": "管理员发送此指令可一次性清空所有用户的同意状态。",
-    "default": "撤销所有同意"
-  },
-  "revoke_success_text": {
-    "description": "撤销成功提示",
-    "type": "string",
-    "default": "⚠️ 已撤销所有用户的同意状态，所有用户需要重新同意。"
-  },
-  "revoke_no_admin_text": {
-    "description": "非管理员撤销的提示",
-    "type": "string",
-    "default": "❌ 抱歉，只有管理员可以执行此操作。"
-  },
-  "admin_list": {
-    "description": "管理员列表（每行一个用户ID）",
-    "type": "text",
-    "hint": "每个用户的用户ID可于日志中查看。每行一个。",
-    "default": ""
-  }
-}
+# 管理员列表
+admin_list:
+  type: textarea
+  description: "管理员用户ID列表（每行一个）"
+  default: ""
+  placeholder: "123456789\n987654321"
+  required: false
+  group: "权限设置"
+
+# 同意命令
+agree_command:
+  type: text
+  description: "用户同意协议的命令"
+  default: "同意"
+  placeholder: "同意"
+  required: false
+  group: "命令设置"
+
+# 撤销命令
+revoke_command:
+  type: text
+  description: "管理员撤销所有同意的命令"
+  default: "撤销所有同意"
+  placeholder: "撤销所有同意"
+  required: false
+  group: "命令设置"
+
+# 已同意提示
+already_agreed_text:
+  type: textarea
+  description: "用户已同意时的提示文本"
+  default: "✅ 您已同意过用户协议，感谢您的配合！"
+  required: false
+  group: "提示文本"
+
+# 同意成功提示
+agree_success_text:
+  type: textarea
+  description: "用户同意成功后的提示文本"
+  default: "✅ 您已成功同意用户协议，现在可以正常使用所有功能了。"
+  required: false
+  group: "提示文本"
+
+# 撤销成功提示
+revoke_success_text:
+  type: textarea
+  description: "管理员撤销成功后的提示文本"
+  default: "✅ 已成功撤销所有用户的同意记录。"
+  required: false
+  group: "提示文本"
+
+# 无权限提示
+revoke_no_admin_text:
+  type: textarea
+  description: "非管理员尝试撤销时的提示文本"
+  default: "❌ 您没有权限执行此操作，仅管理员可撤销。"
+  required: false
+  group: "提示文本"
+
+# 重复提醒提示
+repeat_reminder_text:
+  type: textarea
+  description: "用户未同意但已提醒过时的提示文本"
+  default: "⚠️ 请先同意用户协议后再使用功能。发送 /同意 表示同意。"
+  required: false
+  group: "提示文本"
+
+# 首次提醒提示
+reminder_text:
+  type: textarea
+  description: "首次提醒用户查看协议的提示文本"
+  default: "📋 请先阅读并同意以下协议：\n\n发送 /同意 表示您已阅读并同意上述协议。"
+  required: false
+  group: "提示文本"
+
+# 用户协议标题
+user_agreement_title:
+  type: text
+  description: "用户协议标题"
+  default: "用户协议"
+  required: false
+  group: "协议内容"
+
+# 隐私政策标题
+privacy_policy_title:
+  type: text
+  description: "隐私政策标题"
+  default: "隐私政策"
+  required: false
+  group: "协议内容"
+
+# 用户协议内容
+user_agreement:
+  type: textarea
+  description: "用户协议内容（支持多行文本）"
+  default: |
+    欢迎使用本机器人服务！
+    
+    1. 请遵守相关法律法规
+    2. 请勿发布违法、违规内容
+    3. 请勿恶意攻击、骚扰他人
+    4. 请勿发送垃圾信息、广告
+    5. 违反规定将被限制使用
+    
+    使用本服务即表示您同意以上条款。
+  required: false
+  group: "协议内容"
+
+# 隐私政策内容
+privacy_policy:
+  type: textarea
+  description: "隐私政策内容（支持多行文本）"
+  default: |
+    我们重视您的隐私：
+    
+    1. 我们仅收集必要的用户信息
+    2. 您的信息仅用于提供服务
+    3. 我们不会向第三方泄露您的信息
+    4. 您可以随时要求删除您的信息
+    5. 我们采取合理措施保护您的数据安全
+    
+    如有疑问，请联系管理员。
+  required: false
+  group: "协议内容"
