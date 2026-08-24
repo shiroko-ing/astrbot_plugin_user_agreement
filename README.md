@@ -1,4 +1,4 @@
-##astrbot_plugin_user_agreement
+（##astrbot_plugin_user_agreement
 
 AstrBot 用户协议与隐私政策同意管理插件。
 
@@ -85,3 +85,6 @@ AstrBot 用户协议与隐私政策同意管理插件。
 - 内置双重包装防御：`evt = args[0] if args else event`
 - 空消息/空白消息不产生任何副作用（不会标记提醒状态）
 - 已同意用户路径零开销（直接 `return`）
+
+##更新日志
+1.1.2版本修复日志由于**上传错了**导致无法使用现已修复
