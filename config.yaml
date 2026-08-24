@@ -1,5 +1,11 @@
+# 用户协议同意插件配置
+
 # 权限设置
 admin_list: ""
+
+# 群组设置
+check_groups: ""
+group_consent_mode: "individual"
 
 # 命令设置
 agree_command: "同意"
@@ -10,8 +16,8 @@ already_agreed_text: "✅ 您已同意过用户协议，感谢您的配合！"
 agree_success_text: "✅ 您已成功同意用户协议，现在可以正常使用所有功能了。"
 revoke_success_text: "✅ 已成功撤销所有用户的同意记录。"
 revoke_no_admin_text: "❌ 您没有权限执行此操作，仅管理员可撤销。"
-repeat_reminder_text: "⚠️ 请先同意用户协议后再使用功能。发送 /同意 表示同意。"
-reminder_text: "📋 请先阅读并同意以下协议：\n\n发送 /同意 表示您已阅读并同意上述协议。"
+repeat_reminder_text: "⚠️ 请先同意用户协议后再使用功能。发送 /同意 或 同意 表示同意。"
+reminder_text: "📋 请先阅读并同意以下协议：\n\n发送 /同意 或 同意 表示您已阅读并同意上述协议。"
 
 # 协议内容
 user_agreement_title: "用户协议"
@@ -34,6 +40,5 @@ privacy_policy: |
   2. 您的信息仅用于提供服务
   3. 我们不会向第三方泄露您的信息
   4. 您可以随时要求删除您的信息
-  5. 我们采取合理措施保护您的数据安全
   
   如有疑问，请联系管理员。
