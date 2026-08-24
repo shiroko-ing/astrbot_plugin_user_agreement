@@ -3,7 +3,6 @@ import asyncio
 import threading
 from pathlib import Path
 from typing import Optional, Set
-from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 from astrbot.api.event import filter, AstrMessageEvent
@@ -24,18 +23,22 @@ class UserAgreement(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
         self.config = config
-        self._lock = asyncio.Lock()  # 异步锁
-        self._thread_lock = threading.RLock()  # 线程锁（用于同步操作）
-        self._executor = ThreadPoolExecutor(max_workers=2)  # 线程池
+        self._lock = asyncio.Lock()
+        self._thread_lock = threading.RLock()
+        self._executor = ThreadPoolExecutor(max_workers=2)
         self._consented_users: Set[str] = set()
         self._reminded_users: Set[str] = set()
         self._db_path = None
-        self._conn = None  # 异步连接
-        self._sync_conn = None  # 同步连接（用于线程池）
+        self._json_backup = None
+        self._conn = None
+        self._sync_conn = None
         
-        # 初始化
+        # 初始化路径
         self._init_paths()
         
+        # 异步初始化
+        asyncio.create_task(self._async_init())
+
     def _init_paths(self):
         """初始化路径"""
         data_path = Path(get_astrbot_data_path()) / "plugin_data" / self.name
@@ -43,8 +46,14 @@ class UserAgreement(Star):
         self._db_path = data_path / "consents.db"
         self._json_backup = data_path / "consented_users_backup.json"
 
+    async def _async_init(self):
+        """异步初始化"""
+        await self._init_database()
+        await self._load_data()
+        self._validate_config()
+
     async def _init_database(self):
-        """异步初始化数据库"""
+        """初始化数据库"""
         if HAS_AIOSQLITE:
             try:
                 self._conn = await aiosqlite.connect(str(self._db_path))
@@ -71,7 +80,7 @@ class UserAgreement(Star):
         await self._init_sync_database()
 
     async def _init_sync_database(self):
-        """初始化同步数据库（在线程池中运行）"""
+        """初始化同步数据库"""
         def _init():
             import sqlite3
             self._sync_conn = sqlite3.connect(
@@ -100,8 +109,8 @@ class UserAgreement(Star):
             logger.error(f"[UserAgreement] 同步数据库初始化失败: {e}")
 
     async def _load_data(self):
-        """异步加载数据"""
-        # 尝试从数据库加载
+        """加载数据"""
+        # 从数据库加载
         if self._conn:
             try:
                 async with self._conn.execute("SELECT user_id FROM consents") as cursor:
@@ -127,7 +136,7 @@ class UserAgreement(Star):
                 logger.error(f"[UserAgreement] 同步数据库加载失败: {e}")
         
         # 从JSON备份加载
-        if self._json_backup.exists():
+        if self._json_backup and self._json_backup.exists():
             try:
                 def _load_json():
                     return set(json.loads(self._json_backup.read_text(encoding="utf-8")))
@@ -139,10 +148,22 @@ class UserAgreement(Star):
             except Exception as e:
                 logger.error(f"[UserAgreement] JSON备份加载失败: {e}")
 
+    def _validate_config(self):
+        """验证配置"""
+        required_configs = [
+            "agree_command", "revoke_command", "already_agreed_text",
+            "agree_success_text", "revoke_success_text", "revoke_no_admin_text",
+            "repeat_reminder_text", "reminder_text", "user_agreement_title",
+            "privacy_policy_title", "user_agreement", "privacy_policy"
+        ]
+        
+        missing = [cfg for cfg in required_configs if not self.config.get(cfg)]
+        if missing:
+            logger.warning(f"[UserAgreement] 缺少配置项: {', '.join(missing)}")
+
     async def _save_consent(self, user_id: str):
-        """异步保存单个用户的同意"""
+        """保存用户同意"""
         async with self._lock:
-            # 更新内存
             self._consented_users.add(user_id)
             
             # 保存到数据库
@@ -169,17 +190,18 @@ class UserAgreement(Star):
                 except Exception as e:
                     logger.error(f"[UserAgreement] 同步数据库保存失败: {e}")
             
-            # 异步保存JSON备份（每10次保存一次，避免频繁IO）
+            # 每10次保存一次JSON备份
             if len(self._consented_users) % 10 == 0:
                 await self._save_json_backup()
 
     async def _save_json_backup(self):
-        """异步保存JSON备份"""
+        """保存JSON备份"""
         def _save():
-            self._json_backup.write_text(
-                json.dumps(list(self._consented_users), ensure_ascii=False, indent=2),
-                encoding="utf-8"
-            )
+            if self._json_backup:
+                self._json_backup.write_text(
+                    json.dumps(list(self._consented_users), ensure_ascii=False, indent=2),
+                    encoding="utf-8"
+                )
         
         try:
             await asyncio.get_event_loop().run_in_executor(self._executor, _save)
@@ -187,11 +209,9 @@ class UserAgreement(Star):
             logger.error(f"[UserAgreement] JSON备份保存失败: {e}")
 
     async def _clear_all_data(self):
-        """异步清除所有数据"""
+        """清除所有数据"""
         async with self._lock:
             count = len(self._consented_users)
-            
-            # 清除内存
             self._consented_users.clear()
             self._reminded_users.clear()
             
@@ -217,7 +237,6 @@ class UserAgreement(Star):
             
             # 清除JSON备份
             await self._save_json_backup()
-            
             return count
 
     def _is_admin(self, sender_id: str) -> bool:
@@ -240,14 +259,11 @@ class UserAgreement(Star):
     async def on_all_message(self, event: AstrMessageEvent, *args):
         """主事件处理"""
         try:
-            # 获取事件和消息
             evt = args[0] if args else event
             
-            # 安全获取发送者ID
             try:
                 sender_id = str(evt.message_obj.sender.user_id)
             except (AttributeError, Exception):
-                # 如果无法获取发送者，可能是系统消息
                 return
             
             message_str = evt.message_str.strip()
@@ -285,8 +301,6 @@ class UserAgreement(Star):
     async def _handle_agree(self, normalized_msg: str, sender_id: str, evt) -> bool:
         """处理同意命令"""
         agree_cmd = self._get_cmd("agree_command", "同意")
-        
-        # 构建同意命令列表
         agree_cmds = ["/同意", "/agree", f"/{agree_cmd}", agree_cmd]
         normalized_agree_cmds = {self._normalize_cmd(cmd) for cmd in agree_cmds}
         
@@ -327,7 +341,11 @@ class UserAgreement(Star):
     async def _handle_stats(self, normalized_msg: str, sender_id: str, evt) -> bool:
         """处理统计命令"""
         if normalized_msg == "/协议统计" and self._is_admin(sender_id):
-            stats = f"📊 统计信息\n已同意用户: {len(self._consented_users)}\n待提醒用户: {len(self._reminded_users)}"
+            stats = (
+                f"📊 统计信息\n"
+                f"已同意用户: {len(self._consented_users)}\n"
+                f"待提醒用户: {len(self._reminded_users)}"
+            )
             await evt.plain_result(stats)
             return True
         return False
@@ -342,14 +360,12 @@ class UserAgreement(Star):
         
         self._reminded_users.add(sender_id)
         
-        # 获取协议内容
         ua_title = self._get_cmd("user_agreement_title", "用户协议")
         pp_title = self._get_cmd("privacy_policy_title", "隐私政策")
         
         ua_text = self._get_cmd("user_agreement", "暂无内容")
         pp_text = self._get_cmd("privacy_policy", "暂无内容")
         
-        # 创建节点
         node_ua = Node(uin=sender_id, name=ua_title, content=[Plain(ua_text)])
         node_pp = Node(uin=sender_id, name=pp_title, content=[Plain(pp_text)])
         
@@ -363,8 +379,7 @@ class UserAgreement(Star):
 
     async def __aenter__(self):
         """异步上下文管理器入口"""
-        await self._init_database()
-        await self._load_data()
+        await self._async_init()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
